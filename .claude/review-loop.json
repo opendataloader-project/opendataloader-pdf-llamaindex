@@ -1,5 +1,0 @@
-{
-  "buildCommand": "pip install -e . 2>&1 | tail -3",
-  "testCommand": "pytest tests/test_readers_opendataloader_pdf.py -v --disable-socket --allow-unix-socket",
-  "maxRounds": 5
-}
