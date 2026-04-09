@@ -185,7 +185,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
         try:
             output_dir = tempfile.mkdtemp()
         except OSError as e:
-            logger.error("Failed to create temp directory: %s", e)
+            logger.exception("Failed to create temp directory")
             return
 
         try:
