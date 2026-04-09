@@ -94,11 +94,11 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
             yield Document(
                 text=parts[0].strip(),
                 metadata={
+                    **(extra_info or {}),
                     "source": source_name,
                     "format": fmt,
                     "page": 1,
                     **({"hybrid": self.hybrid} if self.hybrid else {}),
-                    **(extra_info or {}),
                 },
             )
 
@@ -111,11 +111,11 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                     yield Document(
                         text=page_content,
                         metadata={
+                            **(extra_info or {}),
                             "source": source_name,
                             "format": fmt,
                             "page": page_num,
                             **({"hybrid": self.hybrid} if self.hybrid else {}),
-                            **(extra_info or {}),
                         },
                     )
 
@@ -143,11 +143,11 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
             yield Document(
                 text=page_content,
                 metadata={
+                    **(extra_info or {}),
                     "source": source_name,
                     "format": fmt,
                     "page": page_num,
                     **({"hybrid": self.hybrid} if self.hybrid else {}),
-                    **(extra_info or {}),
                 },
             )
 
@@ -237,7 +237,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                 return
 
             output_path = Path(output_dir)
-            for file in output_path.glob(f"*.{ext}"):
+            for file in sorted(output_path.glob(f"*.{ext}")):
                 with open(file, "r", encoding="utf-8") as f:
                     content = f.read()
 
@@ -257,10 +257,10 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                     yield Document(
                         text=content,
                         metadata={
+                            **(extra_info or {}),
                             "source": source_name,
                             "format": fmt,
                             **({"hybrid": self.hybrid} if self.hybrid else {}),
-                            **(extra_info or {}),
                         },
                     )
         except Exception:
