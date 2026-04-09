@@ -212,16 +212,19 @@ print(response)
 Each `Document` includes metadata:
 
 **With `split_pages=True` (default):**
+
 ```python
 {"source": "document.pdf", "format": "text", "page": 1}
 ```
 
 **With `split_pages=False`:**
+
 ```python
 {"source": "document.pdf", "format": "text"}
 ```
 
 **With hybrid mode:**
+
 ```python
 {"source": "document.pdf", "format": "text", "page": 1, "hybrid": "docling-fast"}
 ```

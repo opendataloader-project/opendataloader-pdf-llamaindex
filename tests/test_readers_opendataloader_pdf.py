@@ -540,6 +540,15 @@ class TestImportError:
         mock_mkdtemp.return_value = "/tmp/test"
         reader = OpenDataLoaderPDFReader()
 
-        with patch.dict("sys.modules", {"opendataloader_pdf": None}):
-            with pytest.raises((ImportError, TypeError)):
+        import builtins
+
+        original_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "opendataloader_pdf":
+                raise ImportError("No module named 'opendataloader_pdf'")
+            return original_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=mock_import):
+            with pytest.raises(ImportError, match="opendataloader_pdf"):
                 list(reader.lazy_load_data(file_path="doc.pdf"))

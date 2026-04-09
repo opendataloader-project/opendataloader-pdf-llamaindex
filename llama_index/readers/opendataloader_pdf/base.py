@@ -233,7 +233,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
             except Exception as e:
                 if self.hybrid:
                     raise
-                logger.error("Error during conversion: %s", e)
+                logger.exception("Error during conversion")
                 return
 
             output_path = Path(output_dir)
@@ -267,5 +267,10 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
             logger.debug("Error processing output files", exc_info=True)
             raise
         finally:
-            if not (self.image_output == "external" and self.image_dir is None):
+            if self.image_output == "external" and self.image_dir is None:
+                logger.info(
+                    "Extracted images retained in temp directory: %s",
+                    output_dir,
+                )
+            else:
                 shutil.rmtree(output_dir, ignore_errors=True)

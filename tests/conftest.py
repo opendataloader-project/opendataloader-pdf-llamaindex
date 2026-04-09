@@ -17,6 +17,7 @@ def java_available() -> bool:
             ["java", "-version"],
             capture_output=True,
             text=True,
+            check=False,
             timeout=10,
         )
         return result.returncode == 0
