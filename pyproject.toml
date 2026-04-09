@@ -1,0 +1,43 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opendataloader-pdf-llamaindex"
+version = "0.0.0"
+description = "LlamaIndex reader for OpenDataLoader PDF — fast, accurate, local PDF extraction"
+authors = [{ name = "opendataloader-project", email = "open.dataloader@hancom.com" }]
+requires-python = ">=3.10,<4.0"
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["llamaindex", "llama-index", "pdf", "reader", "document-parsing", "rag"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: General",
+]
+dependencies = [
+    "llama-index-core>=0.13.0,<0.15",
+    "opendataloader-pdf>=2.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+include = ["llama_index/"]
+
+[tool.hatch.build.targets.sdist]
+include = ["llama_index/"]
+
+[project.urls]
+Homepage = "https://github.com/opendataloader-project/opendataloader-pdf"
+Repository = "https://github.com/opendataloader-project/opendataloader-pdf-llamaindex"
+Issues = "https://github.com/opendataloader-project/opendataloader-pdf-llamaindex/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-socket>=0.7.0"]
