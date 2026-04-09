@@ -38,5 +38,5 @@ Homepage = "https://github.com/opendataloader-project/opendataloader-pdf"
 Repository = "https://github.com/opendataloader-project/opendataloader-pdf-llamaindex"
 Issues = "https://github.com/opendataloader-project/opendataloader-pdf-llamaindex/issues"
 
-[dependency-groups]
+[project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-socket>=0.7.0"]

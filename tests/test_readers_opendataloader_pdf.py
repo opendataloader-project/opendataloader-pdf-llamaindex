@@ -223,7 +223,7 @@ class TestSplitPages:
             "\n<<<ODL_PAGE_BREAK_1>>>\nPage one content"
             "\n<<<ODL_PAGE_BREAK_2>>>\nPage two content"
         )
-        docs = list(reader._split_into_pages(content, "test.pdf"))
+        docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 2
         assert docs[0].text == "Page one content"
         assert docs[0].metadata["page"] == 1
@@ -236,7 +236,7 @@ class TestSplitPages:
             "Before separator"
             "\n<<<ODL_PAGE_BREAK_2>>>\nPage two"
         )
-        docs = list(reader._split_into_pages(content, "test.pdf"))
+        docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 2
         assert docs[0].text == "Before separator"
         assert docs[0].metadata["page"] == 1
@@ -249,7 +249,7 @@ class TestSplitPages:
             "\n<<<ODL_PAGE_BREAK_2>>>\n   "
             "\n<<<ODL_PAGE_BREAK_3>>>\nPage three"
         )
-        docs = list(reader._split_into_pages(content, "test.pdf"))
+        docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 2
         assert docs[0].metadata["page"] == 1
         assert docs[1].metadata["page"] == 3
@@ -257,7 +257,7 @@ class TestSplitPages:
     def test_metadata_includes_source_and_format(self) -> None:
         reader = OpenDataLoaderPDFReader(format="markdown")
         content = "\n<<<ODL_PAGE_BREAK_1>>>\nContent"
-        docs = list(reader._split_into_pages(content, "doc.pdf"))
+        docs = list(reader._split_into_pages(content, "doc.pdf", "markdown"))
         assert docs[0].metadata["source"] == "doc.pdf"
         assert docs[0].metadata["format"] == "markdown"
 
@@ -266,7 +266,7 @@ class TestSplitPages:
         content = "\n<<<ODL_PAGE_BREAK_1>>>\nContent"
         docs = list(
             reader._split_into_pages(
-                content, "doc.pdf", extra_info={"custom": "value"}
+                content, "doc.pdf", "text", extra_info={"custom": "value"}
             )
         )
         assert docs[0].metadata["custom"] == "value"
@@ -287,7 +287,7 @@ class TestSplitJsonPages:
                 {"type": "paragraph", "page number": 1, "content": "p1b"},
             ]
         }
-        docs = list(reader._split_json_into_pages(data, "test.pdf"))
+        docs = list(reader._split_json_into_pages(data, "test.pdf", "json"))
         assert len(docs) == 2
         assert docs[0].metadata["page"] == 1
         assert docs[1].metadata["page"] == 2
@@ -303,7 +303,7 @@ class TestSplitJsonPages:
                 {"type": "paragraph", "page number": 1, "content": "p1"},
             ]
         }
-        docs = list(reader._split_json_into_pages(data, "test.pdf"))
+        docs = list(reader._split_json_into_pages(data, "test.pdf", "json"))
         assert docs[0].metadata["page"] == 1
         assert docs[1].metadata["page"] == 3
 
@@ -315,7 +315,7 @@ class TestSplitJsonPages:
                 {"type": "paragraph", "content": "no page field"},
             ]
         }
-        docs = list(reader._split_json_into_pages(data, "test.pdf"))
+        docs = list(reader._split_json_into_pages(data, "test.pdf", "json"))
         assert len(docs) == 1
         assert docs[0].metadata["page"] == 1
 
@@ -324,7 +324,7 @@ class TestSplitJsonPages:
         data = {"kids": [{"type": "paragraph", "page number": 1, "content": "p"}]}
         docs = list(
             reader._split_json_into_pages(
-                data, "test.pdf", extra_info={"key": "val"}
+                data, "test.pdf", "json", extra_info={"key": "val"}
             )
         )
         assert docs[0].metadata["key"] == "val"
@@ -520,7 +520,7 @@ class TestSinglePageNoSeparator:
     def test_no_separator_becomes_page_1(self) -> None:
         reader = OpenDataLoaderPDFReader()
         content = "Just plain content without any separator"
-        docs = list(reader._split_into_pages(content, "test.pdf"))
+        docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 1
         assert docs[0].text == "Just plain content without any separator"
         assert docs[0].metadata["page"] == 1

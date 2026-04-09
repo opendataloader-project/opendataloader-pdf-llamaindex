@@ -7,7 +7,7 @@ import shutil
 import tempfile
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, ClassVar, Dict, Iterable, List, Optional, Union
 
 from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.schema import Document
@@ -67,7 +67,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
     split_pages: bool = True
 
     # Internal separator used for page splitting.
-    _PAGE_SPLIT_SEPARATOR: str = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
+    _PAGE_SPLIT_SEPARATOR: ClassVar[str] = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
 
     def _get_page_separator(self) -> Optional[str]:
         """Return the page separator string when split_pages is enabled."""
@@ -79,6 +79,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
         self,
         content: str,
         source_name: str,
+        fmt: str,
         extra_info: Optional[Dict] = None,
     ) -> Iterable[Document]:
         """Split text/markdown/html content by page separator."""
@@ -94,7 +95,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                 text=parts[0].strip(),
                 metadata={
                     "source": source_name,
-                    "format": self.format,
+                    "format": fmt,
                     "page": 1,
                     **({"hybrid": self.hybrid} if self.hybrid else {}),
                     **(extra_info or {}),
@@ -111,7 +112,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                         text=page_content,
                         metadata={
                             "source": source_name,
-                            "format": self.format,
+                            "format": fmt,
                             "page": page_num,
                             **({"hybrid": self.hybrid} if self.hybrid else {}),
                             **(extra_info or {}),
@@ -122,6 +123,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
         self,
         data: Dict[str, Any],
         source_name: str,
+        fmt: str,
         extra_info: Optional[Dict] = None,
     ) -> Iterable[Document]:
         """Split JSON content by page number field."""
@@ -142,7 +144,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                 text=page_content,
                 metadata={
                     "source": source_name,
-                    "format": self.format,
+                    "format": fmt,
                     "page": page_num,
                     **({"hybrid": self.hybrid} if self.hybrid else {}),
                     **(extra_info or {}),
@@ -245,11 +247,11 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                     if fmt == "json":
                         data = json.loads(content)
                         yield from self._split_json_into_pages(
-                            data, source_name, extra_info
+                            data, source_name, fmt, extra_info
                         )
                     else:
                         yield from self._split_into_pages(
-                            content, source_name, extra_info
+                            content, source_name, fmt, extra_info
                         )
                 else:
                     yield Document(
