@@ -1,6 +1,5 @@
 """OpenDataLoader PDF reader for LlamaIndex."""
 
-import functools
 import json
 import logging
 import re
@@ -17,9 +16,19 @@ from llama_index.core.schema import Document
 logger = logging.getLogger(__name__)
 
 
-@functools.lru_cache(maxsize=1)
+_java_found: Optional[bool] = None
+
+
 def _java_available() -> bool:
-    """Return True if a working Java runtime is found on the system PATH."""
+    """Return True if a working Java runtime is found on the system PATH.
+
+    A positive result is cached for the lifetime of the process; a negative
+    result is re-probed on every call so that installing Java mid-session
+    is recognised without a restart.
+    """
+    global _java_found  # noqa: PLW0603
+    if _java_found:
+        return True
     try:
         result = subprocess.run(
             ["java", "-version"],
@@ -28,8 +37,9 @@ def _java_available() -> bool:
             check=False,
             timeout=10,
         )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+        _java_found = result.returncode == 0
+        return _java_found
+    except (OSError, subprocess.TimeoutExpired):
         return False
 
 

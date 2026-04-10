@@ -17,12 +17,20 @@ def _bypass_input_validation(monkeypatch):
     """Bypass file-existence and Java checks in unit tests.
 
     Tests that verify validation behaviour override these explicitly.
+    Only dummy PDF paths are faked; all other Path.exists calls delegate
+    to the real implementation.
     """
     monkeypatch.setattr(
         "llama_index.readers.opendataloader_pdf.base._java_available",
         lambda: True,
     )
-    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
+
+    def _fake_exists(self):
+        if self.suffix == ".pdf":
+            return True
+        return _original_path_exists(self)
+
+    monkeypatch.setattr("pathlib.Path.exists", _fake_exists)
 
 
 # ---------------------------------------------------------------------------
