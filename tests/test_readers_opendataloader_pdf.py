@@ -594,12 +594,18 @@ class TestFileNotFound:
 
     def test_single_missing_file(self) -> None:
         reader = OpenDataLoaderPDFReader()
-        with pytest.raises(FileNotFoundError, match="does not exist"):
+        with pytest.raises(
+            FileNotFoundError,
+            match=r"Input path does not exist: nonexistent\.pdf",
+        ):
             list(reader.lazy_load_data(file_path="nonexistent.pdf"))
 
     def test_missing_file_in_list(self) -> None:
         reader = OpenDataLoaderPDFReader()
-        with pytest.raises(FileNotFoundError, match="does not exist"):
+        with pytest.raises(
+            FileNotFoundError,
+            match=r"Input path does not exist: nonexistent\.pdf",
+        ):
             list(reader.lazy_load_data(file_path=["nonexistent.pdf"]))
 
 
