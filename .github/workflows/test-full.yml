@@ -3,6 +3,9 @@ name: Test (Full)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   integration-test:
     runs-on: ${{ matrix.os }}
