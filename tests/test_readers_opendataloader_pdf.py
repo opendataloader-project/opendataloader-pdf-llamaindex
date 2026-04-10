@@ -24,6 +24,9 @@ def _bypass_input_validation(monkeypatch):
         "llama_index.readers.opendataloader_pdf.base._java_available",
         lambda: True,
     )
+    monkeypatch.setattr(
+        "llama_index.readers.opendataloader_pdf.base._java_found", None
+    )
 
     def _fake_exists(self):
         if self.suffix == ".pdf":
@@ -610,8 +613,7 @@ class TestJavaCheck:
         "llama_index.readers.opendataloader_pdf.base._java_available",
         return_value=False,
     )
-    @patch("pathlib.Path.exists", return_value=True)
-    def test_no_java_raises_runtime_error(self, *_: MagicMock) -> None:
+    def test_no_java_raises_runtime_error(self, _: MagicMock) -> None:
         reader = OpenDataLoaderPDFReader()
         with pytest.raises(RuntimeError, match="Java is not found"):
             list(reader.lazy_load_data(file_path="doc.pdf"))
