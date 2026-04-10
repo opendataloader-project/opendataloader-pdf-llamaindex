@@ -1,9 +1,11 @@
 """OpenDataLoader PDF reader for LlamaIndex."""
 
+import functools
 import json
 import logging
 import re
 import shutil
+import subprocess
 import tempfile
 from collections import defaultdict
 from pathlib import Path
@@ -13,6 +15,23 @@ from llama_index.core.readers.base import BasePydanticReader
 from llama_index.core.schema import Document
 
 logger = logging.getLogger(__name__)
+
+
+@functools.lru_cache(maxsize=1)
+def _java_available() -> bool:
+    """Return True if a working Java runtime is found on the system PATH."""
+    try:
+        result = subprocess.run(
+            ["java", "-version"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
 
 _FORMAT_TO_EXT = {
     "json": "json",
@@ -179,6 +198,19 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
             paths = [str(file_path)]
         else:
             paths = [str(p) for p in file_path]
+
+        for p in paths:
+            if not Path(p).exists():
+                raise FileNotFoundError(f"Input path does not exist: {p}")
+
+        if not _java_available():
+            raise RuntimeError(
+                "Java is not found on the system PATH. "
+                "OpenDataLoader PDF requires Java 11+. "
+                "Install Java from https://adoptium.net/ and ensure "
+                "'java' is on your system PATH. "
+                "Verify with: java -version"
+            )
 
         ext = _FORMAT_TO_EXT[fmt]
 

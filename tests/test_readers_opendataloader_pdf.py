@@ -8,6 +8,22 @@ import pytest
 from llama_index.core.schema import Document
 from llama_index.readers.opendataloader_pdf import OpenDataLoaderPDFReader
 
+# Save original before any monkeypatching.
+_original_path_exists = Path.exists
+
+
+@pytest.fixture(autouse=True)
+def _bypass_input_validation(monkeypatch):
+    """Bypass file-existence and Java checks in unit tests.
+
+    Tests that verify validation behaviour override these explicitly.
+    """
+    monkeypatch.setattr(
+        "llama_index.readers.opendataloader_pdf.base._java_available",
+        lambda: True,
+    )
+    monkeypatch.setattr("pathlib.Path.exists", lambda self: True)
+
 
 # ---------------------------------------------------------------------------
 # TestInit: Verify default and custom parameter values
@@ -552,3 +568,42 @@ class TestImportError:
         with patch("builtins.__import__", side_effect=mock_import):
             with pytest.raises(ImportError, match="opendataloader_pdf"):
                 list(reader.lazy_load_data(file_path="doc.pdf"))
+
+
+# ---------------------------------------------------------------------------
+# TestFileNotFound: Missing input file raises FileNotFoundError
+# ---------------------------------------------------------------------------
+class TestFileNotFound:
+    """Test that missing input files raise FileNotFoundError."""
+
+    @pytest.fixture(autouse=True)
+    def _real_path_exists(self, monkeypatch):
+        """Restore real Path.exists so file-not-found is testable."""
+        monkeypatch.setattr("pathlib.Path.exists", _original_path_exists)
+
+    def test_single_missing_file(self) -> None:
+        reader = OpenDataLoaderPDFReader()
+        with pytest.raises(FileNotFoundError, match="does not exist"):
+            list(reader.lazy_load_data(file_path="nonexistent.pdf"))
+
+    def test_missing_file_in_list(self) -> None:
+        reader = OpenDataLoaderPDFReader()
+        with pytest.raises(FileNotFoundError, match="does not exist"):
+            list(reader.lazy_load_data(file_path=["nonexistent.pdf"]))
+
+
+# ---------------------------------------------------------------------------
+# TestJavaCheck: Missing Java raises RuntimeError
+# ---------------------------------------------------------------------------
+class TestJavaCheck:
+    """Test that missing Java runtime raises RuntimeError."""
+
+    @patch(
+        "llama_index.readers.opendataloader_pdf.base._java_available",
+        return_value=False,
+    )
+    @patch("pathlib.Path.exists", return_value=True)
+    def test_no_java_raises_runtime_error(self, *_: MagicMock) -> None:
+        reader = OpenDataLoaderPDFReader()
+        with pytest.raises(RuntimeError, match="Java is not found"):
+            list(reader.lazy_load_data(file_path="doc.pdf"))
