@@ -1,5 +1,5 @@
-# Docs owners
-*.md @suji-cho
-
-# Default owners for everything else
+# Default owners for everything in the repository
 * @hyunhee-jo @bundolee @hnc-jglee
+
+# Docs owners (must come after default to take precedence — last-match-wins)
+*.md @suji-cho
