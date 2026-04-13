@@ -40,4 +40,16 @@ Repository = "https://github.com/opendataloader-project/opendataloader-pdf-llama
 Issues = "https://github.com/opendataloader-project/opendataloader-pdf-llamaindex/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-socket>=0.7.0"]
+dev = ["pytest>=8.0", "pytest-socket>=0.7.0", "ruff>=0.5.0", "black>=24.0"]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = ["dist", "build", "docs", "*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []

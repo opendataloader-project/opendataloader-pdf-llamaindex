@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
-from llama_index.core.schema import Document
+
 from llama_index.readers.opendataloader_pdf import OpenDataLoaderPDFReader
 
 # Save original before any monkeypatching.
@@ -24,9 +24,7 @@ def _bypass_input_validation(monkeypatch):
         "llama_index.readers.opendataloader_pdf.base._java_available",
         lambda: True,
     )
-    monkeypatch.setattr(
-        "llama_index.readers.opendataloader_pdf.base._java_found", None
-    )
+    monkeypatch.setattr("llama_index.readers.opendataloader_pdf.base._java_found", None)
 
     def _fake_exists(self):
         if self.suffix == ".pdf":
@@ -107,9 +105,7 @@ class TestFormatValidation:
                     "llama_index.readers.opendataloader_pdf.base.Path.glob",
                     return_value=[],
                 ):
-                    with patch(
-                        "llama_index.readers.opendataloader_pdf.base.shutil.rmtree"
-                    ):
+                    with patch("llama_index.readers.opendataloader_pdf.base.shutil.rmtree"):
                         list(reader.lazy_load_data(file_path="dummy.pdf"))
 
 
@@ -259,10 +255,7 @@ class TestSplitPages:
 
     def test_content_before_separator(self) -> None:
         reader = OpenDataLoaderPDFReader()
-        content = (
-            "Before separator"
-            "\n<<<ODL_PAGE_BREAK_2>>>\nPage two"
-        )
+        content = "Before separator" "\n<<<ODL_PAGE_BREAK_2>>>\nPage two"
         docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 2
         assert docs[0].text == "Before separator"
@@ -292,9 +285,7 @@ class TestSplitPages:
         reader = OpenDataLoaderPDFReader()
         content = "\n<<<ODL_PAGE_BREAK_1>>>\nContent"
         docs = list(
-            reader._split_into_pages(
-                content, "doc.pdf", "text", extra_info={"custom": "value"}
-            )
+            reader._split_into_pages(content, "doc.pdf", "text", extra_info={"custom": "value"})
         )
         assert docs[0].metadata["custom"] == "value"
 
@@ -350,9 +341,7 @@ class TestSplitJsonPages:
         reader = OpenDataLoaderPDFReader(format="json")
         data = {"kids": [{"type": "paragraph", "page number": 1, "content": "p"}]}
         docs = list(
-            reader._split_json_into_pages(
-                data, "test.pdf", "json", extra_info={"key": "val"}
-            )
+            reader._split_json_into_pages(data, "test.pdf", "json", extra_info={"key": "val"})
         )
         assert docs[0].metadata["key"] == "val"
 
@@ -400,9 +389,7 @@ class TestMetadata:
             patch("opendataloader_pdf.convert"),
             patch("builtins.open", mock_open(read_data="content")),
         ):
-            reader = OpenDataLoaderPDFReader(
-                split_pages=False, hybrid="docling-fast"
-            )
+            reader = OpenDataLoaderPDFReader(split_pages=False, hybrid="docling-fast")
             docs = list(reader.lazy_load_data(file_path="doc.pdf"))
 
             assert docs[0].metadata["hybrid"] == "docling-fast"
@@ -561,9 +548,7 @@ class TestImportError:
 
     @patch("llama_index.readers.opendataloader_pdf.base.tempfile.mkdtemp")
     @patch("llama_index.readers.opendataloader_pdf.base.shutil.rmtree")
-    def test_import_error_propagates(
-        self, mock_rmtree: MagicMock, mock_mkdtemp: MagicMock
-    ) -> None:
+    def test_import_error_propagates(self, mock_rmtree: MagicMock, mock_mkdtemp: MagicMock) -> None:
         mock_mkdtemp.return_value = "/tmp/test"
         reader = OpenDataLoaderPDFReader()
 
