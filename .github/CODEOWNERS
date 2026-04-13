@@ -1,0 +1,5 @@
+# Docs owners
+*.md @suji-cho
+
+# Default owners for everything else
+* @hyunhee-jo @bundolee @hnc-jglee
