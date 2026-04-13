@@ -200,8 +200,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
         fmt = self.format.lower()
         if fmt not in _FORMAT_TO_EXT:
             raise ValueError(
-                f"Invalid format '{self.format}'. "
-                f"Valid options: {list(_FORMAT_TO_EXT.keys())}"
+                f"Invalid format '{self.format}'. " f"Valid options: {list(_FORMAT_TO_EXT.keys())}"
             )
 
         if isinstance(file_path, (str, Path)):
@@ -226,7 +225,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
 
         try:
             output_dir = tempfile.mkdtemp()
-        except OSError as e:
+        except OSError:
             logger.exception("Failed to create temp directory")
             return
 
@@ -260,9 +259,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                 }
                 # --- END SYNCED CONVERT KWARGS ---
                 # Omit None values so the core engine applies its own defaults.
-                convert_kwargs = {
-                    k: v for k, v in convert_kwargs.items() if v is not None
-                }
+                convert_kwargs = {k: v for k, v in convert_kwargs.items() if v is not None}
 
                 convert(
                     input_path=paths,
@@ -272,7 +269,7 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                     text_page_separator=page_sep,
                     html_page_separator=page_sep,
                 )
-            except Exception as e:
+            except Exception:
                 if self.hybrid:
                     raise
                 logger.exception("Error during conversion")
@@ -288,13 +285,9 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
                 if self.split_pages:
                     if fmt == "json":
                         data = json.loads(content)
-                        yield from self._split_json_into_pages(
-                            data, source_name, fmt, extra_info
-                        )
+                        yield from self._split_json_into_pages(data, source_name, fmt, extra_info)
                     else:
-                        yield from self._split_into_pages(
-                            content, source_name, fmt, extra_info
-                        )
+                        yield from self._split_into_pages(content, source_name, fmt, extra_info)
                 else:
                     yield Document(
                         text=content,

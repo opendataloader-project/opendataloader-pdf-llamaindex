@@ -8,6 +8,7 @@ import json
 
 import pytest
 from llama_index.core.schema import Document
+
 from llama_index.readers.opendataloader_pdf import OpenDataLoaderPDFReader
 
 from .conftest import java_available
@@ -81,23 +82,17 @@ class TestIntegrationOptions:
         assert len(docs) >= 1
 
     def test_pages_selection(self, multi_page_pdf) -> None:
-        reader = OpenDataLoaderPDFReader(
-            pages="1", split_pages=False
-        )
+        reader = OpenDataLoaderPDFReader(pages="1", split_pages=False)
         docs = list(reader.load_data(file_path=multi_page_pdf))
         assert len(docs) == 1
 
     def test_use_struct_tree(self, sample_pdf) -> None:
-        reader = OpenDataLoaderPDFReader(
-            use_struct_tree=True, split_pages=False
-        )
+        reader = OpenDataLoaderPDFReader(use_struct_tree=True, split_pages=False)
         docs = list(reader.load_data(file_path=sample_pdf))
         assert len(docs) >= 1
 
     def test_keep_line_breaks(self, sample_pdf) -> None:
-        reader = OpenDataLoaderPDFReader(
-            keep_line_breaks=True, split_pages=False
-        )
+        reader = OpenDataLoaderPDFReader(keep_line_breaks=True, split_pages=False)
         docs = list(reader.load_data(file_path=sample_pdf))
         assert len(docs) >= 1
 
