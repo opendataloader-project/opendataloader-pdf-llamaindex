@@ -1,0 +1,30 @@
+LlamaIndex OpenDataLoader PDF
+Copyright 2025-2026 Hancom, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+This product includes 'LlamaIndex OpenDataLoader PDF' distributed under
+the Apache License 2.0, along with various third-party software
+components. For the complete source code and detailed copyright notices
+and license information for each third-party component, please visit:
+
+    https://github.com/opendataloader-project/opendataloader-pdf-llamaindex
+
+
+THIRD-PARTY LICENSES
+
+This project depends on third-party libraries listed in `pyproject.toml`.
+Each is licensed under its own open source license, available via the
+respective package metadata on PyPI. A consolidated `THIRD_PARTY/` folder
+(matching the upstream `opendataloader-pdf` convention) may be added in
+a future release.
