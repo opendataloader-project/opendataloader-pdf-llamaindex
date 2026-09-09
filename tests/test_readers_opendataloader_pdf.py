@@ -262,6 +262,76 @@ class TestSplitPages:
         assert docs[0].metadata["page"] == 1
         assert docs[1].metadata["page"] == 2
 
+    def test_html_escaped_separator(self) -> None:
+        """Engine >= 2.5 HTML-escapes the marker and pads it with spaces."""
+        reader = OpenDataLoaderPDFReader()
+        content = (
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n<p>Page one</p>"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \n<p>Page two</p>"
+        )
+        docs = list(reader._split_into_pages(content, "test.pdf", "html"))
+        assert len(docs) == 2
+        assert docs[0].text == "<p>Page one</p>"
+        assert docs[0].metadata["page"] == 1
+        assert docs[1].text == "<p>Page two</p>"
+        assert docs[1].metadata["page"] == 2
+
+    def test_html_preamble_is_not_a_page(self) -> None:
+        """The <head> block before the first marker must not become a page 1."""
+        reader = OpenDataLoaderPDFReader()
+        content = (
+            '<!DOCTYPE html>\n<html lang="und">\n<head>\n'
+            "<title>test.pdf</title>\n</head>\n<body>"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n<p>Page one</p>"
+        )
+        docs = list(reader._split_into_pages(content, "test.pdf", "html"))
+        assert len(docs) == 1
+        assert [d.metadata["page"] for d in docs] == [1]
+        assert docs[0].text == "<p>Page one</p>"
+
+    def test_markerless_html_still_yields_the_document(self) -> None:
+        """No marker means one page — the preamble guard must not discard it."""
+        reader = OpenDataLoaderPDFReader()
+        content = (
+            '<!DOCTYPE html>\n<html lang="und">\n<head>\n</head>\n<body>'
+            "<p>The only page</p></body>\n</html>"
+        )
+        docs = list(reader._split_into_pages(content, "test.pdf", "html"))
+        assert len(docs) == 1
+        assert "The only page" in docs[0].text
+        assert docs[0].metadata["page"] == 1
+
+    @pytest.mark.parametrize(
+        "preamble",
+        [
+            '<!DOCTYPE html>\n<html lang="und">\n<head>\n</head>\n<body>',
+            '<!doctype html>\n<html lang="und">\n<head>\n</head>\n<body>',
+            "<html>\n<head>\n</head>\n<body>",
+        ],
+        ids=["uppercase-doctype", "lowercase-doctype", "no-doctype"],
+    )
+    def test_html_preamble_never_becomes_a_page(self, preamble: str) -> None:
+        """The preamble is identified by the format, not by a <!DOCTYPE prefix."""
+        reader = OpenDataLoaderPDFReader()
+        content = (
+            preamble + "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n<p>Page 1</p>"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \n<p>Page 2</p>"
+        )
+        docs = list(reader._split_into_pages(content, "test.pdf", "html"))
+        assert [d.metadata["page"] for d in docs] == [1, 2]
+        assert docs[0].text == "<p>Page 1</p>"
+
+    def test_escaped_marker_is_not_matched_outside_html(self) -> None:
+        """Text and markdown are not escaped, so the raw marker stays the contract."""
+        reader = OpenDataLoaderPDFReader()
+        content = (
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \nfirst"
+            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \nsecond"
+        )
+        for fmt in ("text", "markdown"):
+            docs = list(reader._split_into_pages(content, "test.pdf", fmt))
+            assert len(docs) == 1, f"{fmt} must not split on the escaped marker"
+
     def test_empty_pages_skipped(self) -> None:
         reader = OpenDataLoaderPDFReader()
         content = (
