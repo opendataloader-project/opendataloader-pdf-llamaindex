@@ -115,13 +115,32 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
         separator_pattern = re.escape(self._PAGE_SPLIT_SEPARATOR).replace(
             re.escape("%page-number%"), r"(\d+)"
         )
+        # HTML output escapes the angle brackets and pads the marker with spaces
+        # (engine >= 2.5), so "<<<MARKER>>>" arrives as " &lt;&lt;&lt;MARKER&gt;&gt;&gt; ".
+        # Only HTML is escaped, so widening the pattern is scoped to it: text and
+        # markdown keep matching the raw marker exactly as before.
+        if fmt == "html":
+            separator_pattern = separator_pattern.replace(
+                re.escape("<<<"), r"[ ]?(?:<<<|&lt;&lt;&lt;)"
+            ).replace(re.escape(">>>"), r"(?:>>>|&gt;&gt;&gt;)[ ]?")
 
         parts = re.split(separator_pattern, content)
+        split_happened = len(parts) > 1
 
         # Handle content before first separator (treat as page 1).
-        if parts[0].strip():
+        # In HTML output the engine puts the first marker straight after <body>, so
+        # once a marker has matched, parts[0] is the document preamble (<!DOCTYPE>,
+        # <head>, <body>) and never page content — emitting it would yield a second,
+        # contentless page 1. The check is on the format alone, not on a <!DOCTYPE
+        # prefix: a prefix test misses a lowercase doctype or an output that omits it,
+        # and lets the preamble through as a duplicate page 1.
+        # With no marker at all, parts[0] is the whole document and must be kept.
+        preamble = parts[0].strip()
+        if fmt == "html" and split_happened:
+            preamble = ""
+        if preamble:
             yield Document(
-                text=parts[0].strip(),
+                text=preamble,
                 metadata={
                     **(extra_info or {}),
                     "source": source_name,
