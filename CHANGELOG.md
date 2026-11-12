@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking**: Python 3.11 or later is required (was 3.10), as opendataloader-pdf 2.5.17 and later require it
+
 ## [0.0.3] - 2026-04-14
 
 ### Added

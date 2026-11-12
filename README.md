@@ -6,7 +6,7 @@ solves: [Load PDFs as LlamaIndex Document objects for RAG pipelines, structured 
 input: PDF files (digital, tagged)
 output: LlamaIndex Document objects (text, Markdown, JSON with bounding boxes, HTML)
 sdk: Python
-requirements: Python 3.10+, Java 11+
+requirements: Python 3.11+, Java 11+
 key-differentiators: [LlamaIndex-native BasePydanticReader, per-page Document splitting, SimpleDirectoryReader file_extractor support, all opendataloader-pdf extraction features]
 -->
 
@@ -31,7 +31,7 @@ For the full feature set of the core engine (hybrid AI mode, OCR, formula extrac
 
 ## Requirements
 
-- Python >= 3.10
+- Python >= 3.11
 - Java 11+ available on system `PATH`
 
 Verify Java is installed:
