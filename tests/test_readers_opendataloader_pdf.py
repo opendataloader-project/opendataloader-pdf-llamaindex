@@ -1,12 +1,23 @@
 """Unit tests for OpenDataLoader PDF Reader."""
 
 import json
+import re
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
 from llama_index.readers.opendataloader_pdf import OpenDataLoaderPDFReader
+
+
+def _marker(page, html=False):
+    """The page marker that the engine writes for the reader's page separator."""
+    marker = OpenDataLoaderPDFReader._PAGE_SPLIT_SEPARATOR.replace("%page-number%", str(page))
+    if html:
+        # HTML output escapes the angle brackets and pads the marker with spaces.
+        marker = marker.replace("\n<<<", "\n &lt;&lt;&lt;").replace(">>>\n", "&gt;&gt;&gt; \n")
+    return marker
+
 
 # Save original before any monkeypatching.
 _original_path_exists = Path.exists
@@ -184,7 +195,7 @@ class TestConvertCall:
         list(reader.lazy_load_data(file_path="doc.pdf"))
 
         call_kwargs = mock_convert.call_args.kwargs
-        sep = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
+        sep = OpenDataLoaderPDFReader._PAGE_SPLIT_SEPARATOR
         assert call_kwargs["markdown_page_separator"] == sep
         assert call_kwargs["text_page_separator"] == sep
         assert call_kwargs["html_page_separator"] == sep
@@ -242,10 +253,7 @@ class TestSplitPages:
 
     def test_split_two_pages(self) -> None:
         reader = OpenDataLoaderPDFReader()
-        content = (
-            "\n<<<ODL_PAGE_BREAK_1>>>\nPage one content"
-            "\n<<<ODL_PAGE_BREAK_2>>>\nPage two content"
-        )
+        content = f"{_marker(1)}Page one content" f"{_marker(2)}Page two content"
         docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 2
         assert docs[0].text == "Page one content"
@@ -255,7 +263,7 @@ class TestSplitPages:
 
     def test_content_before_separator(self) -> None:
         reader = OpenDataLoaderPDFReader()
-        content = "Before separator" "\n<<<ODL_PAGE_BREAK_2>>>\nPage two"
+        content = "Before separator" f"{_marker(2)}Page two"
         docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 2
         assert docs[0].text == "Before separator"
@@ -266,8 +274,7 @@ class TestSplitPages:
         """Engine >= 2.5 HTML-escapes the marker and pads it with spaces."""
         reader = OpenDataLoaderPDFReader()
         content = (
-            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n<p>Page one</p>"
-            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \n<p>Page two</p>"
+            f"{_marker(1, html=True)}<p>Page one</p>" f"{_marker(2, html=True)}<p>Page two</p>"
         )
         docs = list(reader._split_into_pages(content, "test.pdf", "html"))
         assert len(docs) == 2
@@ -282,7 +289,7 @@ class TestSplitPages:
         content = (
             '<!DOCTYPE html>\n<html lang="und">\n<head>\n'
             "<title>test.pdf</title>\n</head>\n<body>"
-            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n<p>Page one</p>"
+            f"{_marker(1, html=True)}<p>Page one</p>"
         )
         docs = list(reader._split_into_pages(content, "test.pdf", "html"))
         assert len(docs) == 1
@@ -314,8 +321,8 @@ class TestSplitPages:
         """The preamble is identified by the format, not by a <!DOCTYPE prefix."""
         reader = OpenDataLoaderPDFReader()
         content = (
-            preamble + "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \n<p>Page 1</p>"
-            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \n<p>Page 2</p>"
+            preamble + f"{_marker(1, html=True)}<p>Page 1</p>"
+            f"{_marker(2, html=True)}<p>Page 2</p>"
         )
         docs = list(reader._split_into_pages(content, "test.pdf", "html"))
         assert [d.metadata["page"] for d in docs] == [1, 2]
@@ -324,21 +331,50 @@ class TestSplitPages:
     def test_escaped_marker_is_not_matched_outside_html(self) -> None:
         """Text and markdown are not escaped, so the raw marker stays the contract."""
         reader = OpenDataLoaderPDFReader()
-        content = (
-            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_1&gt;&gt;&gt; \nfirst"
-            "\n &lt;&lt;&lt;ODL_PAGE_BREAK_2&gt;&gt;&gt; \nsecond"
-        )
+        content = f"{_marker(1, html=True)}first" f"{_marker(2, html=True)}second"
         for fmt in ("text", "markdown"):
             docs = list(reader._split_into_pages(content, "test.pdf", fmt))
             assert len(docs) == 1, f"{fmt} must not split on the escaped marker"
 
+    def test_page_separator_has_a_random_token(self) -> None:
+        """The separator is not a published fixed marker."""
+        separator = OpenDataLoaderPDFReader._PAGE_SPLIT_SEPARATOR
+        assert re.fullmatch(r"\n<<<ODL_PAGE_BREAK_[0-9a-f]{16}_%page-number%>>>\n", separator)
+
+    @pytest.mark.parametrize("fmt", ["text", "markdown", "html"])
+    def test_marker_in_pdf_text_does_not_split(self, fmt: str) -> None:
+        """A marker without the token is document text, not a page break."""
+        reader = OpenDataLoaderPDFReader(format=fmt)
+        forged = "\n<<<ODL_PAGE_BREAK_7>>>\n"
+        if fmt == "html":
+            forged = "\n &lt;&lt;&lt;ODL_PAGE_BREAK_7&gt;&gt;&gt; \n"
+        content = (
+            f"{_marker(1, html=fmt == 'html')}Intro{forged}outro"
+            f"{_marker(2, html=fmt == 'html')}Page 2"
+        )
+
+        docs = list(reader._split_into_pages(content, "test.pdf", fmt))
+
+        assert [d.metadata["page"] for d in docs] == [1, 2]
+        assert "ODL_PAGE_BREAK_7" in docs[0].text
+
+    def test_long_page_number_in_pdf_text_does_not_raise(self) -> None:
+        """int() of more than 4300 digits raises ValueError; no split, no error."""
+        reader = OpenDataLoaderPDFReader()
+        digits = "9" * 5000
+        content = (
+            f"{_marker(1)}Intro\n<<<ODL_PAGE_BREAK_{digits}>>>\n"
+            f"{_marker(digits)}outro"
+            f"{_marker(2)}Page 2"
+        )
+
+        docs = list(reader._split_into_pages(content, "test.pdf", "text"))
+
+        assert [d.metadata["page"] for d in docs] == [1, 2]
+
     def test_empty_pages_skipped(self) -> None:
         reader = OpenDataLoaderPDFReader()
-        content = (
-            "\n<<<ODL_PAGE_BREAK_1>>>\nPage one"
-            "\n<<<ODL_PAGE_BREAK_2>>>\n   "
-            "\n<<<ODL_PAGE_BREAK_3>>>\nPage three"
-        )
+        content = f"{_marker(1)}Page one" f"{_marker(2)}   " f"{_marker(3)}Page three"
         docs = list(reader._split_into_pages(content, "test.pdf", "text"))
         assert len(docs) == 2
         assert docs[0].metadata["page"] == 1
@@ -346,14 +382,14 @@ class TestSplitPages:
 
     def test_metadata_includes_source_and_format(self) -> None:
         reader = OpenDataLoaderPDFReader(format="markdown")
-        content = "\n<<<ODL_PAGE_BREAK_1>>>\nContent"
+        content = f"{_marker(1)}Content"
         docs = list(reader._split_into_pages(content, "doc.pdf", "markdown"))
         assert docs[0].metadata["source"] == "doc.pdf"
         assert docs[0].metadata["format"] == "markdown"
 
     def test_extra_info_merged(self) -> None:
         reader = OpenDataLoaderPDFReader()
-        content = "\n<<<ODL_PAGE_BREAK_1>>>\nContent"
+        content = f"{_marker(1)}Content"
         docs = list(
             reader._split_into_pages(content, "doc.pdf", "text", extra_info={"custom": "value"})
         )
