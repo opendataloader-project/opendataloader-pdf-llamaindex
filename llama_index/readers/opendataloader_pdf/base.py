@@ -3,6 +3,7 @@
 import json
 import logging
 import re
+import secrets
 import shutil
 import subprocess
 import tempfile
@@ -95,8 +96,14 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
     # --- END SYNCED PARAMS ---
     split_pages: bool = True
 
-    # Internal separator used for page splitting.
-    _PAGE_SPLIT_SEPARATOR: ClassVar[str] = "\n<<<ODL_PAGE_BREAK_%page-number%>>>\n"
+    # Internal separator used for page splitting. The text of a PDF can contain
+    # any string, also a fixed marker, so the marker carries a random token that
+    # is made once for each process: text in a document cannot predict it, and
+    # only the markers that the engine writes split pages. The engine replaces
+    # only %page-number%, and the split removes the markers from the output.
+    _PAGE_SPLIT_SEPARATOR: ClassVar[str] = (
+        f"\n<<<ODL_PAGE_BREAK_{secrets.token_hex(8)}_%page-number%>>>\n"
+    )
 
     def _get_page_separator(self) -> Optional[str]:
         """Return the page separator string when split_pages is enabled."""
@@ -112,8 +119,10 @@ class OpenDataLoaderPDFReader(BasePydanticReader):
         extra_info: Optional[Dict] = None,
     ) -> Iterable[Document]:
         """Split text/markdown/html content by page separator."""
+        # At most 9 digits: int() raises ValueError for a number of more than
+        # 4300 digits, and no document has 10^9 pages.
         separator_pattern = re.escape(self._PAGE_SPLIT_SEPARATOR).replace(
-            re.escape("%page-number%"), r"(\d+)"
+            re.escape("%page-number%"), r"(\d{1,9})"
         )
         # HTML output escapes the angle brackets and pads the marker with spaces
         # (engine >= 2.5), so "<<<MARKER>>>" arrives as " &lt;&lt;&lt;MARKER&gt;&gt;&gt; ".
